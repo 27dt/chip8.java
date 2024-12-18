@@ -20,7 +20,6 @@ public class chip8 {
     private byte sndtimer;                      // 8 bit sound timer
     private byte[][] display;                   // display
     private boolean[] keys;                     // keyboard keys
-    private boolean paused; 
     
     // NOTE: DISPLAY AND SOUND TIMERS MIGHT BE MESSED UP BY USING SIGNED 8BIT
     // NOTE: MIGHT HAVE TO SWITCH TO INT USING VALUE & 0XFF 
@@ -58,7 +57,6 @@ public class chip8 {
         this.V = new short[16];              // clears V0 through VF
         this.stack = new short[16];         // clears stack
         this.display = new byte[32][64];    // clears display (64x32 resolution)
-        this.paused = false;
         this.keys = new boolean[16];        // initialized as a boolean array (false)
         
         for (int i = 0x50; i < 0xA0; i++) {     // writes fontset to memory 0x50-0x9F
@@ -314,7 +312,7 @@ public class chip8 {
                  * xcoord is incremented every time, to draw the next pixel. current is shifted left 1, to get rid of the byte we just drew
                  * ycoord is incremented after the entire row has been drawn, in order to process the next row */
             
-                byte xcoord; //= (byte) (V[x] % 64);            // gets x-coord
+                byte xcoord = (byte) (V[x] % 64);            // gets x-coord
                 byte ycoord = (byte) (V[y] % 32);               // gets y-coord
                 byte height = (byte) n;                         // gets sprite height
                 V[0xF] = 0;                                     // resets Vf
@@ -327,29 +325,29 @@ public class chip8 {
 
                     for (int bit = 0; bit < 8; bit++) {             // loops for 8 bits = 1 byte
                         if (((current & 0x80) >> 7) != 0) {             // pulls first byte
-                            if (display[ycoord][xcoord] == 1) {         // if the corresponding screen pixel is 1, set Vf
+                            if (display[ycoord % 32][xcoord % 64] == 1) {         // if the corresponding screen pixel is 1, set Vf
                                 V[0xF] = 1;
                             }
-                            display[ycoord][xcoord] ^= 1;           // XORs the byte onto the corresponding pixel
+                            display[ycoord % 32][xcoord % 64] ^= 1;           // XORs the byte onto the corresponding pixel
                         }
-                        //System.out.println("xcoord: " + xcoord);
+                        System.out.println("xcoord: " + xcoord);
                         xcoord++;                                   // increments xcoord to set up for next bit
                         current <<= 1;                              // shifts current 1 place left, to move next bit to draw
                     }
-                    //System.out.println("ycoord: " + ycoord);
+                    System.out.println("ycoord: " + ycoord);
                     ycoord++;                                       // increments ycoord to process next layer of sprite
                 }
                 System.out.println("0xD000: DISPLAY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);            // holy shit boss, i think we implemented it (2025-05-03 1:35 am)
                 break;
             case (short) 0xE:                           // FIRST HALF-BYTE E
                 switch(kk) {
-                    case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)-----------IMPLEMENTED. WORKS? IDK---------------------------
+                    case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)
                         if (keys[V[x]] == true) {
                             pc += 2;
                         }
                         System.out.println("0xEX9E: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);
                         break;
-                    case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)------IMPLEMENTED. WORKS? IDK---------------------------
+                    case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)
                         if (keys[V[x]] == false) {
                             pc += 2;
                         }
@@ -365,8 +363,8 @@ public class chip8 {
                         V[x] = deltimer;
                         System.out.println("0xFX07: SETS VX = DELTIMER, V" + x + " = " + V[x] + ", DELTIMER: " + deltimer);
                         break;
-                    case 0x000A:                                //-----------------------------------------------------------------------------------------------------
-                        System.out.println("0xFX0A: NOT IMPLEMENTED");
+                    case 0x000A:                                //-----------later---------------------------------------
+                        System.out.println("0xFX0A: NOT IMPLEMENTED\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
                         break;
                     case 0x0015:                                // sets delay timer = vx (LD DT, Vx)
                         deltimer = (byte) (V[x] & 0x00FF);
@@ -427,7 +425,6 @@ public class chip8 {
         return display[x][y];
     } 
 
-
     // sets keys to specified array. used in screenpanel to set keyboard input variables to chip8 cpu
     public void setKeys(boolean[] k){
         keys = k;
@@ -436,5 +433,10 @@ public class chip8 {
     // for printing, debugging
     public boolean[] getKeys() {
         return keys;
+    }
+
+    // for sound timer. for now.
+    public byte getsndtimer() {
+        return sndtimer;
     }
 }

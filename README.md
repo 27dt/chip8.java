@@ -19,10 +19,10 @@ The `chip8.java` file consists of memory and register initializations, and funct
 - Make chip8.java more modular
 - Organize file structure (src file, etc.)
 - Consider implementing tests
-- Get keyboard to work (TOP PRIORITY)
-- Get Threading to work for timer handling
 - Get sound to work
 - Consider writing a fix to work around Java not having unsigned data types
+- Refactor chip8.java - TOP PRIORITY
+- Check clock and timer rates for accuracy, fix if inaccurate
 
 FURTHER:
 - Allow a user to change appearance of the pixels and background colours of the program

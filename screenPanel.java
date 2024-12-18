@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.util.Arrays;
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,7 +9,7 @@ public class ScreenPanel extends JPanel implements Runnable{
     final int WIDTH = COLS * SCALE;
     final int HEIGHT = ROWS * SCALE;
 
-    int clockFrequency = 500;            
+    int clockFrequency = 400;          
     chip8 current = new chip8();
 
     // Initialize thread for cpu clock.
@@ -40,6 +39,7 @@ public class ScreenPanel extends JPanel implements Runnable{
         double delta = 0;
         long lastTime = System.nanoTime();
         long currentTime;
+        int cycleCount = 0; // This is a shoddy way to handle 60hz instructions timing
 
         while (cpuThread != null) {
             // Takes current time in Nanoseconds, determines if delta < / > interval.
@@ -47,17 +47,20 @@ public class ScreenPanel extends JPanel implements Runnable{
             delta += (currentTime - lastTime) / interval;   
             lastTime = currentTime;                         
 
+            // Cycles timers roughly at 60hz, or after 8 cycles running at 500hz (~60hz)
+            if (cycleCount == 14) {
+                current.cycleTimers();
+                cycleCount = 0;
+            }
+            
             // If Delta > 1, drawInterval is passed and update/repaint is called.
             // Else (Delta < 1), loop continues as current interval is not over.
             if (delta >= 1) {
                 update();
                 repaint();
+                cycleCount++; // increments cycle counter
                 delta--;
             }
-        
-        
-            
-        
         }
     }
 
@@ -76,10 +79,9 @@ public class ScreenPanel extends JPanel implements Runnable{
             //System.out.println("right");
         //}
         current.setKeys(keyboard.keys);
-        current.cycleTimers();              // MOVE THIS TO ITS OWN 60HZ DECREMENT
         current.cycle();
 
-        System.out.println(Arrays.toString(current.getKeys()));
+        //System.out.println(Arrays.toString(current.getKeys()));
         //current.updateTimers();
         //current.updateSound();
     }
@@ -106,6 +108,7 @@ public class ScreenPanel extends JPanel implements Runnable{
     // Starts emulator by loading rom.
     public void startEmulator() {
         try {
+            //loadRom("roms/4-flags.ch8");
             loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
         }
         catch (IOException e) {
