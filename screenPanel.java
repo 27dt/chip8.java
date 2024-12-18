@@ -2,118 +2,106 @@ import java.io.IOException;
 import javax.swing.*;
 import java.awt.*;
 
-
 public class screenPanel extends JPanel implements Runnable{
-    final int rows = 32;
-    final int cols = 64;
-    final int scale = 10;
-    
-    final int WIDTH = cols * scale;
-    final int HEIGHT = rows * scale;
+    final int ROWS = 32;                // chip8 display rows
+    final int COLS = 64;                // chip8 display columns
+    final int SCALE = 10;               // Pixel size
+    final int WIDTH = COLS * SCALE;
+    final int HEIGHT = ROWS * SCALE;
 
-    int FPS = 120;   // essentially speed in Hz
+    int clockFreq = 120;                // Clock Frequency (Hz)
+    chip8 current = new chip8();        // Initialize chip8
+    Thread cpuThread;                   // Initialize thread for timer
+    Keyboard keyboard = new Keyboard();  // Keyboard Handling
 
-
-    chip8 current;
-
-    Thread cpuThread;
-
+    // screenPanel constructor.
     public screenPanel() {
         this.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        this.addKeyListener(keyboard);
+        this.setFocusable(true);
         startEmulator();
     }
 
+    // Initializes cpu thread for timers.
     public void StartCPUThread() {
         cpuThread = new Thread(this);
         cpuThread.start();
     }
 
     @Override
-    public void run() {
-        double interval = 1000000000/FPS;
+    public void run() { // Thank you RyiSnow
+        double drawInterval = 1000000000/clockFreq;             // ~clockFreq times per second (Nanosecond conversion)
+
         double delta = 0;
-        long lastTime = System.nanoTime();
+        long lastTime = System.nanoTime();                      // Last system time in nanoseconds
         long currentTime;
 
         while (cpuThread != null) {
-            //long currentTime = System.nanoTime();
-            //long currentTime2 = System.currentTimeMillis();
-            //System.out.println("current time: " + currentTime);
-            //System.out.println("Running.");
-            currentTime = System.nanoTime();
-            delta += (currentTime-lastTime)/interval;
-            lastTime = currentTime;
+            currentTime = System.nanoTime();                    // Current time in nanoseconds
+            delta += (currentTime - lastTime) / drawInterval;   // Determine if delta < or > drawInterval
+            lastTime = currentTime;                             // Updates lastTime
 
+            // If Delta > 1, drawInterval is passed and update/repaint is called
+            // Else (Delta < 1), loop continues as current interval is not over
             if (delta >= 1) {
-                // CONSIDER ONLY REPAINTING IF A DISPLAY INSTRUCTION IS CALLED
-                // MODIFY TIMING TO RUN A SET AMOUNT OF INSTRUCTIONS PER SECOND
-                // RUNS AT 60HZ; IDEAL INSTRUCTIONS PER SECOND =
-                current.cycle();
-                //current.cycle();
-                //current.cycle();
-                //current.cycle();
-                current.updateTimers();
-
-                //System.out.println(currentTime);
-
+                update();
                 repaint();
                 delta--;
             }
         }
     }
 
-    public void startEmulator() {
-        try { loadRom("roms/4-flags.ch8"); }
-        catch (IOException e) { System.out.println("Bad Rom"); }
+    // Cycles CPU, updates timers and sound.
+    public void update() {
+        if (keyboard.up == true) {
+            System.out.println("up");
+        }
+        else if (keyboard.down == true) {
+            System.out.println("down");
+        }
+        else if (keyboard.left == true) {
+            System.out.println("left");
+        }
+        else if (keyboard.right == true) {
+            System.out.println("right");
+        }
+        
+        current.cycle();
+        current.updateTimers();
+        current.updateSound();
     }
     
+    // Gets each pixel on chip8 to determine if on/off, and paints accordingly.
     public void paint(Graphics g) {
         Graphics2D g2D = (Graphics2D) g;
         
-        for (int y = 0; y < rows; y++) {
-            for (int x = 0; x < cols; x++) {
+        for (int y = 0; y < ROWS; y++) {
+            for (int x = 0; x < COLS; x++) {
                 
                 if (current.getPixel(y, x) == 1) {
                     g2D.setColor(Color.WHITE);
-                    g2D.fillRect(x*scale, y*scale, scale, scale);
+                    g2D.fillRect(x*SCALE, y*SCALE, SCALE, SCALE);
                 }
                 if (current.getPixel(y, x) == 0) {
                     g2D.setColor(Color.BLACK);
-                    g2D.fillRect(x*scale, y*scale, scale, scale);
+                    g2D.fillRect(x*SCALE, y*SCALE, SCALE, SCALE);
                 }
             }
         }
     }
 
-    /*
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (running) {
-            current.cycle();
-            repaint();
-            System.out.println("testing");
+    // Starts emulator by loading rom.
+    public void startEmulator() {
+        try {
+            loadRom("roms/4-flags.ch8");
         }
+        catch (IOException e) {
+            System.out.println("Bad Rom");
+        }
+    }    
+
+    // Loads a rom file form the roms folder into memory, using chip8's load function.
+     public void loadRom(String rom) throws IOException{
+        current.load(rom);       
     }
-    */
-
-    public void loadRom(String rom) throws IOException{
-        current = new chip8();              // creates new CHIP-8
-        current.load(rom);                  // loads rom into memory
-    }
-
-    
-        /*
-        short opcode;
-        byte[] memory = new byte[4096];   // 4096 bytes
-        memory[0] = (byte) 0xAB;
-        memory[1] = (byte) 0x45;
-        short pc = 0;                       // 16-bit program counter
-
-        opcode = (short) ((memory[pc] << 8) | memory[pc + 1] );
-        short first = (short) (opcode & 0xF000);
-
-        System.out.println((String.format("0x%08X", opcode)));
-        System.out.println((String.format("0x%08X", first)));
-        */
-
 }
