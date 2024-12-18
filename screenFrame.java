@@ -1,10 +1,10 @@
 import javax.swing.JFrame;
 
-public class screenFrame extends JFrame {
+public class ScreenFrame extends JFrame {
 
-    public screenFrame() {
+    public ScreenFrame() {
         
-        screenPanel panel = new screenPanel();
+        ScreenPanel panel = new ScreenPanel();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.add(panel);
         this.pack();

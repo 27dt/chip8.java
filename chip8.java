@@ -18,7 +18,9 @@ public class chip8 {
     // private short opcode;                     ERROR 1: 16 bits for opcode
     private byte deltimer;                      // 8 bit delay timer
     private byte sndtimer;                      // 8 bit sound timer
-    private byte[][] display;                   // display 
+    private byte[][] display;                   // display
+    private boolean[] keys;                     // keyboard keys
+    private boolean paused; 
     
     // NOTE: DISPLAY AND SOUND TIMERS MIGHT BE MESSED UP BY USING SIGNED 8BIT
     // NOTE: MIGHT HAVE TO SWITCH TO INT USING VALUE & 0XFF 
@@ -56,6 +58,8 @@ public class chip8 {
         this.V = new short[16];              // clears V0 through VF
         this.stack = new short[16];         // clears stack
         this.display = new byte[32][64];    // clears display (64x32 resolution)
+        this.paused = false;
+        this.keys = new boolean[16];        // initialized as a boolean array (false)
         
         for (int i = 0x50; i < 0xA0; i++) {     // writes fontset to memory 0x50-0x9F
             memory[i] = (byte) fontset[i-0x50]; // handles offset (memory[0x50] = fontset[0])      
@@ -130,7 +134,7 @@ public class chip8 {
                 break;
             case 0x1:                                    //  FIRST HALF-BYTE 1
                 pc = nnn;                                       // jump to location nnn (JP addr)
-                System.out.println("0X1NNN: JUMP TO NNN: PC = " + pc);
+                //System.out.println("0X1NNN: JUMP TO NNN: PC = " + pc);---------------------------------------------------------------------- THIS IS OFF FOR NOW TO I CAN SEE
                 break;
             case 0x2:                                    // FIRST HALF-BYTE 2
                 stack[sp] = pc;                                 // pushes pc to stack   (CALL addr)
@@ -339,11 +343,17 @@ public class chip8 {
                 break;
             case (short) 0xE:                           // FIRST HALF-BYTE E
                 switch(kk) {
-                    case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)----------
-                        System.out.println("0xEX9E: NOT IMPLEMENTED");
+                    case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)-----------IMPLEMENTED. WORKS? IDK---------------------------
+                        if (keys[V[x]] == true) {
+                            pc += 2;
+                        }
+                        System.out.println("0xEX9E: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);
                         break;
-                    case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)------
-                        System.out.println("0xEXA1: NOT IMPLEMENTED");
+                    case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)------IMPLEMENTED. WORKS? IDK---------------------------
+                        if (keys[V[x]] == false) {
+                            pc += 2;
+                        }
+                        System.out.println("0xEXA1: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);    
                         break;
                     default:
                         break;
@@ -355,7 +365,7 @@ public class chip8 {
                         V[x] = deltimer;
                         System.out.println("0xFX07: SETS VX = DELTIMER, V" + x + " = " + V[x] + ", DELTIMER: " + deltimer);
                         break;
-                    case 0x000A:                                //------------------------------------------------------------------------- 
+                    case 0x000A:                                //-----------------------------------------------------------------------------------------------------
                         System.out.println("0xFX0A: NOT IMPLEMENTED");
                         break;
                     case 0x0015:                                // sets delay timer = vx (LD DT, Vx)
@@ -403,6 +413,13 @@ public class chip8 {
                 // DO SOMETHING HERE
                 break;
         }
+        
+    }
+
+    public void cycleTimers() {
+        // UPDATES DISPLAY/SOUND TIMER (IS CALLED 60 TIMES A SECOND IN THE SCREENPANEL)
+        if (deltimer > 0) {deltimer -= 1;}
+        if (sndtimer > 0) {sndtimer -= 1;}  
     }
 
     // GIVEN AN X and Y VALUE, 0/1 IS RETURNED IF THE PIXEL IS ON/OFF
@@ -410,34 +427,14 @@ public class chip8 {
         return display[x][y];
     } 
 
-    // UPDATES DISPLAY/SOUND TIMER (IS CALLED 60 TIMES A SECOND IN THE SCREENPANEL)
-    public void updateTimers() {
-        if (deltimer > 0) {deltimer -= 1;}
-        if (sndtimer > 0) {sndtimer -= 1;}
-    }
 
-    // UPDATES SOUND TIMER (IS CALLED 60 TIMES A SECOND IN THE SCREENPANEL)
-    public void updateSound() {
+    // sets keys to specified array. used in screenpanel to set keyboard input variables to chip8 cpu
+    public void setKeys(boolean[] k){
+        keys = k;
+    } 
 
-    }
-
-    // FOR DEBUGGING
-    public void toprint() {     
-        // i = 0x50; i < 0xA0
-        
-        /*
-        for (int i = 0x50; i < 0xA0; i++) {
-            System.out.println("memory location: " + Integer.toHexString(i) + " value: " + Integer.toHexString(memory[i] & 0xFF));
-        }*/
-        
-        
-        // USED TO PRINT SCREEN. IN SCREENPANEL.JAVA, CALL CURRENT.TOPRINT AFTER CYCLING ROM
-        for (int i = 0; i < display.length; i++) {
-            for (int j = 0; j < display[i].length; j++) {
-                System.out.print(display[i][j] + " ");
-            }
-            System.out.println();
-        }
-        
+    // for printing, debugging
+    public boolean[] getKeys() {
+        return keys;
     }
 }
