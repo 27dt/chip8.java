@@ -17,6 +17,20 @@ The `chip8.java` file consists of memory and register initializations, and funct
 
 # Planning
 - Make chip8.java more modular
+    - File Structure:
+    - src
+        - display
+            - screenframe and screenpanel
+        - keyboard
+            - keyboard
+        - cpu
+            - chip8 main class
+            - decoder class
+            - possible memory class
+            - possible support function class
+    - roms
+        - all roms
+    - README
 - Organize file structure (src file, etc.)
 - Consider implementing tests
 - Get sound to work

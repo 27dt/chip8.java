@@ -66,24 +66,8 @@ public class ScreenPanel extends JPanel implements Runnable{
 
     // Cycles CPU, updates timers and sound.
     public void update() {
-        //if (keyboard.up == true) {
-            //System.out.println("up");
-        //}
-        //else if (keyboard.down == true) {
-            //System.out.println("down");
-        //}
-        //else if (keyboard.left == true) {
-            //System.out.println("left");
-        //}
-        //else if (keyboard.right == true) {
-            //System.out.println("right");
-        //}
         current.setKeys(keyboard.keys);
         current.cycle();
-
-        //System.out.println(Arrays.toString(current.getKeys()));
-        //current.updateTimers();
-        //current.updateSound();
     }
     
     // Gets each pixel on chip8 to determine if on/off, and paints accordingly.
@@ -108,8 +92,8 @@ public class ScreenPanel extends JPanel implements Runnable{
     // Starts emulator by loading rom.
     public void startEmulator() {
         try {
-            //loadRom("roms/4-flags.ch8");
-            loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
+            loadRom("roms/4-flags.ch8");
+            //loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
         }
         catch (IOException e) {
             System.out.println("Bad Rom");

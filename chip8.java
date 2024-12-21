@@ -4,10 +4,6 @@ import java.io.InputStream;
 import java.util.Random;
 import java.io.File;
 
-// 2024-05-16 POSSIBLE ERROR:
-// FX33 FAILS THE TEST BUT CORRECTLY WORKS?
-
-
 public class chip8 {
     private byte[] memory;                      // 4096 bytes
     private short[] V;                           // 16 8-bit Vx registers   =---- 05/16/24 - maybe its a signed issue, but switching this to SHORT fixes V overflows
