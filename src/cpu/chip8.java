@@ -1,3 +1,4 @@
+package src.cpu;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,7 +68,7 @@ public class chip8 {
         byte data;                                                  // hold current byte                      
         for (int index = 0; index <= file.length()-1; index++) {    // writes data (bytewise) into memory locations from 0x200 ibwards
             data = (byte) input.read();
-            memory[0x200 + index] = data;                           
+            memory[0x200 + index] = (byte) data;                           
         }
         input.close();                                              // closes inputstream
     }  
@@ -118,7 +119,7 @@ public class chip8 {
                         break;
                     case 0x00EE:                                // returns from subroutine (RET)
                         sp--;                                   // decrements sp
-                        pc = stack[sp];                         // places value at stack[sp] in pc
+                        pc = (short) stack[sp];                         // places value at stack[sp] in pc
                         stack[sp] = 0;                          // "pops" stack[sp] (sets to 0)
                         System.out.println("0X00EE: RETURN FROM SUBROUTINE: PC = " + pc);
                         break;
@@ -127,43 +128,43 @@ public class chip8 {
                 }
                 break;
             case 0x1:                                    //  FIRST HALF-BYTE 1
-                pc = nnn;                                       // jump to location nnn (JP addr)
+                pc = (short) nnn;                                       // jump to location nnn (JP addr)
                 //System.out.println("0X1NNN: JUMP TO NNN: PC = " + pc);---------------------------------------------------------------------- THIS IS OFF FOR NOW TO I CAN SEE
                 break;
             case 0x2:                                    // FIRST HALF-BYTE 2
-                stack[sp] = pc;                                 // pushes pc to stack   (CALL addr)
+                stack[sp] = (short) pc;                                 // pushes pc to stack   (CALL addr)
                 sp++;                                           // increments sp
-                pc = nnn;                                       // pc jumps to nnn
+                pc = (short) nnn;                                       // pc jumps to nnn
                 System.out.println("0X2000: CALL SUBROUTINE: PC = " + pc);
                 break;
             case 0x3:                            // FIRST HALF-BYTE 3/4  (SE Vx, byte || SNE Vx, byte)                
                 if (V[x] == kk) {               // skips next instruction if 0x3000 && Vx = kk
-                    pc += 2;  
+                    pc = (short) (pc + 2);  
                 }
                 System.out.println("0X3000: SKIP IF VX = KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
 
             case 0x4:
                 if (V[x] != kk) {
-                    pc += 2;
+                    pc = (short) (pc + 2);
                 }
                 System.out.println("0x4000: SKIP IF VX != KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
 
             case 0x5:                                    // FIRST HALF-BYTE 5 (SE Vx, Vy)
                 if (V[x] == V[y]) {                             // skips next instruction if Vx = Vy
-                    pc += 2;
+                    pc = (short) ((pc + 2) & 0x00FF);
                 }    
                 System.out.println("0x5000: SKIP IF VX = VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
                 break; 
             case 0x6:                                    // FIRST HALF-BYTE 6 (LD Vx, byte)
                 //V[x] = (short) (kk & 0x00FF);                               // sets Vx = kk
-                V[x] = kk;
+                V[x] = (short) (kk & 0xFFFF);
                 System.out.println("0x6000: SETS VX = KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
             case 0x7:                                    // FIRST HALF-BYTE 7 (ADD Vx, byte)
                 //V[x] += (short) (kk & 0x00FF);                              // sets Vx += kk
-                V[x] += kk;
+                V[x] = (short) ((V[x] + kk) & 0x00FF);
                 System.out.println("0x7000: SETS VX += KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
             case (short) 0x8:                            // FIRST HALF-BYTE 8
@@ -208,13 +209,13 @@ public class chip8 {
                         System.out.println("----------------------------");
                         System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
 
-                        if (V[x] + V[y] > 255) {                    // if result > 255, set Vf to 1 (carry)
+                        V[x] = (short) ((V[x] + V[y]) & 0x00FF);
+                        
+                        if (((V[x] + V[y]) & 0x00FF) > 255) {                    // if result > 255, set Vf to 1 (carry)
                             V[0xF] = 1;
-                            V[x] = (short) ((V[x] + V[y]) & 0x00FF);//TESTING
                         }
                         else {
                             V[0xF] = 0;
-                            V[x] = (short) ((V[x] + V[y]) & 0x00FF);// TESTING
                         }                          // if result < 255, reset Vf to 0
 
                         System.out.println("0x8xx4: SETS VX = VX+VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
@@ -223,14 +224,16 @@ public class chip8 {
                     case 0x0005:                                // set Vx = Vx - Vy (SUB Vx, Vy)
                         System.out.println("----------------------------");
                         System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
-                        
+
+                        V[0xF] = 0;
+
                         if (V[x] > V[y]) {                          // NOT borrow, so Vf = 1
                             V[0xF] = 1; 
                         }
-                        else {                                      // // borrow, so Vf = 0
-                            V[0xF] = 0;
-
-                        }
+                        //else {                                      // // borrow, so Vf = 0
+                            //V[0xF] = 0;
+                        //}
+                        
                         V[x] = (short) ((V[x] - V[y]) & 0x00FF);
 
                         System.out.println("0x8xy5: SETS VX = VX-VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
@@ -250,14 +253,17 @@ public class chip8 {
                         System.out.println("----------------------------");
                         System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
                         
+                        V[0xF] = 0;
+
                         if (V[y] > V[x]) {
                             V[0xF] = 1;   
                         }
                         else {
                             V[0xF] = 0;
                         }
-                        V[x] = (short) ((V[y] - V[x]) & 0x00FF);
 
+                        V[x] = (short) ((V[y] - V[x]) & 0x00FF);
+                        
                         System.out.println("0x8xy7: SETS VX = VY-VX: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
                         System.out.println("----------------------------");
                         break;
@@ -277,12 +283,12 @@ public class chip8 {
                 break;
             case (short) 0x9:                            // FIRST HALF-BYTE 9 (SNE Vx, Vy)
                 if (V[x] != V[y]) {                             // skips next instruction if Vx != Vy
-                    pc += 2;
+                    pc += (short) 2;
                 }
                 System.out.println("0x9000: SKIP IF VX != VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);  
                 break;
             case (short) 0xA:                            // FIRST HALF-BYTE A (LD I, addr)
-                I = nnn;                                        // set I = nnn
+                I = (short) nnn;                                        // set I = nnn
                 System.out.println("0xA000: SETS I=nnn: I=0x" + Integer.toHexString(I) + " nnn=" + Integer.toHexString(nnn));
                 break;
             case (short) 0xB:                            // FIRST HALF-BYTE B (JP V0, addr)
@@ -308,16 +314,15 @@ public class chip8 {
                  * xcoord is incremented every time, to draw the next pixel. current is shifted left 1, to get rid of the byte we just drew
                  * ycoord is incremented after the entire row has been drawn, in order to process the next row */
             
-                byte xcoord = (byte) (V[x] % 64);            // gets x-coord
-                byte ycoord = (byte) (V[y] % 32);               // gets y-coord
-                byte height = (byte) n;                         // gets sprite height
+                short xcoord = (short) ((V[x] % 64) & 0x00FF);               // gets x-coord
+                short ycoord = (short) ((V[y] % 32) & 0x00FF);               // gets y-coord
+                short height = (short) (n & 0x00FF);                         // gets sprite height
                 V[0xF] = 0;                                     // resets Vf
-                byte current;                                   // going to hold current byte (for drawing)
+                short current;                                   // going to hold current byte (for drawing)
 
-                
                 for (int rows = 0; rows < height; rows++) {     // loops for n rows
-                    current = (byte) memory[I + rows];              // sets current as the current byte to draw
-                    xcoord = (byte) (V[x] % 64);                    // sets xcoord using modulo
+                    current = (short) ((memory[I + rows]) & 0xFF);              // sets current as the current byte to draw
+                    xcoord = (short) ((V[x] % 64) & 0xFF);                    // sets xcoord using modulo
 
                     for (int bit = 0; bit < 8; bit++) {             // loops for 8 bits = 1 byte
                         if (((current & 0x80) >> 7) != 0) {             // pulls first byte
@@ -326,11 +331,11 @@ public class chip8 {
                             }
                             display[ycoord % 32][xcoord % 64] ^= 1;           // XORs the byte onto the corresponding pixel
                         }
-                        System.out.println("xcoord: " + xcoord);
+                        //System.out.println("xcoord: " + xcoord);
                         xcoord++;                                   // increments xcoord to set up for next bit
                         current <<= 1;                              // shifts current 1 place left, to move next bit to draw
                     }
-                    System.out.println("ycoord: " + ycoord);
+                    //System.out.println("ycoord: " + ycoord);
                     ycoord++;                                       // increments ycoord to process next layer of sprite
                 }
                 System.out.println("0xD000: DISPLAY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);            // holy shit boss, i think we implemented it (2025-05-03 1:35 am)
@@ -339,13 +344,13 @@ public class chip8 {
                 switch(kk) {
                     case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)
                         if (keys[V[x]] == true) {
-                            pc += 2;
+                            pc += (short) 2;
                         }
                         System.out.println("0xEX9E: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);
                         break;
                     case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)
                         if (keys[V[x]] == false) {
-                            pc += 2;
+                            pc += (short) 2;
                         }
                         System.out.println("0xEXA1: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);    
                         break;
@@ -356,7 +361,7 @@ public class chip8 {
             case (short) 0xF:                            // FIRST HALF-BYTE F
                 switch(kk) {
                     case 0x0007:                                // set vx = delay timer value (LD Vx, DT)
-                        V[x] = deltimer;
+                        V[x] = (short) deltimer;
                         System.out.println("0xFX07: SETS VX = DELTIMER, V" + x + " = " + V[x] + ", DELTIMER: " + deltimer);
                         break;
                     case 0x000A:                                //-----------later---------------------------------------
@@ -395,7 +400,7 @@ public class chip8 {
                         break;
                     case 0x0065:                                // load registers v0-vx (LD Vx, [I])
                         for (int index = 0; index <= x; index++) {
-                            V[index] = memory[I + index];
+                            V[index] = (short) ((memory[I + index]) & 0x00FF);
                         }
                         System.out.println("0xFX65: REGISTERS V0 TO V" + x + " LOADED FROM I=" + I);
                         break;

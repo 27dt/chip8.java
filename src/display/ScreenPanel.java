@@ -1,6 +1,10 @@
+package src.display;
 import java.io.IOException;
 import javax.swing.*;
 import java.awt.*;
+
+import src.cpu.chip8;
+import src.keyboard.Keyboard;
 
 public class ScreenPanel extends JPanel implements Runnable{
     final int ROWS = 32;                // chip8 display rows
@@ -92,8 +96,9 @@ public class ScreenPanel extends JPanel implements Runnable{
     // Starts emulator by loading rom.
     public void startEmulator() {
         try {
-            loadRom("roms/4-flags.ch8");
+            //loadRom("roms/4-flags.ch8");
             //loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
+            loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
         }
         catch (IOException e) {
             System.out.println("Bad Rom");

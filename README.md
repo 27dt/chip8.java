@@ -16,27 +16,14 @@ By editing the name of the loaded file under the `startEmulator` method in `Scre
 The `chip8.java` file consists of memory and register initializations, and functions that load the rom into memory, perform a CPU cycle (decodes bytes of memory into instructions), set pixels to be drawn, updates timers, and handles keyboard input.
 
 # Planning
-- Make chip8.java more modular
-    - File Structure:
-    - src
-        - display
-            - screenframe and screenpanel
-        - keyboard
-            - keyboard
-        - cpu
-            - chip8 main class
-            - decoder class
-            - possible memory class
-            - possible support function class
-    - roms
-        - all roms
-    - README
-- Organize file structure (src file, etc.)
 - Consider implementing tests
 - Get sound to work
 - Consider writing a fix to work around Java not having unsigned data types
-- Refactor chip8.java - TOP PRIORITY
-- Check clock and timer rates for accuracy, fix if inaccurate
+- Refactor chip8.java - ... do this after the bottom 3
+- Check clock and timer rates for accuracy, fix if inaccurate - TOP PRIORITY
+- move chip8 io functions (keyboard/display) to IOFUNCS.java -TOP PRORITY
+- move chip8 cycle to decoder.java - TOP PRIORITY
+- add simple audio handling - src/audio/Audio.java TOP PRIORITY
 
 FURTHER:
 - Allow a user to change appearance of the pixels and background colours of the program
