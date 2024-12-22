@@ -20,7 +20,6 @@ The `chip8.java` file consists of memory and register initializations, and funct
 - Get sound to work
 - Consider writing a fix to work around Java not having unsigned data types
 - Refactor chip8.java - ... do this after the bottom 3
-- Check clock and timer rates for accuracy, fix if inaccurate - TOP PRIORITY
 - move chip8 io functions (keyboard/display) to IOFUNCS.java -TOP PRORITY
 - move chip8 cycle to decoder.java - TOP PRIORITY
 - add simple audio handling - src/audio/Audio.java TOP PRIORITY

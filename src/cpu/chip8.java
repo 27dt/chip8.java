@@ -17,7 +17,7 @@ public class chip8 {
     private byte sndtimer;                      // 8 bit sound timer
     private byte[][] display;                   // display
     private boolean[] keys;                     // keyboard keys
-    
+
     // NOTE: DISPLAY AND SOUND TIMERS MIGHT BE MESSED UP BY USING SIGNED 8BIT
     // NOTE: MIGHT HAVE TO SWITCH TO INT USING VALUE & 0XFF 
     // NOTE: SWITCH CASES 0X8000 AND ONWARDS NEED TO BE CASTED AS A SHORT

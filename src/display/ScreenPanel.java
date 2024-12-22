@@ -13,7 +13,7 @@ public class ScreenPanel extends JPanel implements Runnable{
     final int WIDTH = COLS * SCALE;
     final int HEIGHT = ROWS * SCALE;
 
-    int clockFrequency = 400;          
+    int clockFrequency = 500;          
     chip8 current = new chip8();
 
     // Initialize thread for cpu clock.
@@ -43,7 +43,7 @@ public class ScreenPanel extends JPanel implements Runnable{
         double delta = 0;
         long lastTime = System.nanoTime();
         long currentTime;
-        int cycleCount = 0; // This is a shoddy way to handle 60hz instructions timing
+        int cycleCount = 0; // Counts cycles within 500hz for 60hz timer decreasing.
 
         while (cpuThread != null) {
             // Takes current time in Nanoseconds, determines if delta < / > interval.
@@ -52,7 +52,7 @@ public class ScreenPanel extends JPanel implements Runnable{
             lastTime = currentTime;                         
 
             // Cycles timers roughly at 60hz, or after 8 cycles running at 500hz (~60hz)
-            if (cycleCount == 14) {
+            if (cycleCount == 8) {
                 current.cycleTimers();
                 cycleCount = 0;
             }
@@ -97,8 +97,8 @@ public class ScreenPanel extends JPanel implements Runnable{
     public void startEmulator() {
         try {
             //loadRom("roms/4-flags.ch8");
-            //loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
-            loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
+            loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
+            //loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
         }
         catch (IOException e) {
             System.out.println("Bad Rom");
