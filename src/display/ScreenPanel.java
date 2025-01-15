@@ -101,7 +101,7 @@ public class ScreenPanel extends JPanel implements Runnable{
             //loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
         }
         catch (IOException e) {
-            System.out.println("Bad Rom");
+            System.out.println("Error: Bad Rom");
         }
     }    
 
