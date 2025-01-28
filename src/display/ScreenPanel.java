@@ -97,11 +97,13 @@ public class ScreenPanel extends JPanel implements Runnable{
     public void startEmulator() {
         try {
             //loadRom("roms/4-flags.ch8");
-            loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
+            loadRom("roms/2-ibm-logo.ch8");
+            //loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
             //loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
         }
         catch (IOException e) {
             System.out.println("Error: Bad Rom");
+            System.exit(1);
         }
     }    
 
