@@ -82,13 +82,15 @@ public class ScreenPanel extends JPanel implements Runnable{
             for (int x = 0; x < COLS; x++) {
                 
                 if (current.getPixel(y, x) == 1) {
-                    g2D.setColor(Color.WHITE);
+                    g2D.setColor(Color.GREEN);
                     g2D.fillRect(x*SCALE, y*SCALE, SCALE, SCALE);
                 }
                 if (current.getPixel(y, x) == 0) {
                     g2D.setColor(Color.BLACK);
                     g2D.fillRect(x*SCALE, y*SCALE, SCALE, SCALE);
                 }
+                // g2D.setColor(Color.BLACK);
+                // g2D.drawRect(x*SCALE, y*SCALE, SCALE, SCALE);
             }
         }
     }
@@ -96,8 +98,9 @@ public class ScreenPanel extends JPanel implements Runnable{
     // Starts emulator by loading rom.
     public void startEmulator() {
         try {
+            loadRom("roms/3-corax+.ch8");
             //loadRom("roms/4-flags.ch8");
-            loadRom("roms/2-ibm-logo.ch8");
+            //loadRom("roms/2-ibm-logo.ch8");
             //loadRom("roms/5-Breakout (Brix hack) [David Winter, 1997].ch8");
             //loadRom("roms/6-Keypad Test [Hap, 2006].ch8");
         }

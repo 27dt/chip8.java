@@ -79,12 +79,12 @@ public class chip8 {
     // Fetches, Decodes, and Executes current opcode at PC.
     public void cycle() {
         int opcode = (((memory[pc]) & 0x00FF) << 8) | ((memory[pc+1]) & 0x00FF);
-        System.out.println("Opcode---------------------------------------------------:"+Integer.toHexString((((memory[pc]) & 0x00FF) << 8) | ((memory[pc+1]) & 0x00FF)));
-        System.out.println("Real Opcode----------------------------------------------:"+Integer.toHexString(opcode));
-        System.out.println(Integer.toHexString( opcode >> 12));
-        System.out.println(Integer.toHexString( opcode >> 8));
-        System.out.println(Integer.toHexString( opcode >> 4));
-        System.out.println(Integer.toHexString(opcode & 0xF000));
+        // System.out.println("Opcode---------------------------------------------------:"+Integer.toHexString((((memory[pc]) & 0x00FF) << 8) | ((memory[pc+1]) & 0x00FF)));
+        // System.out.println("Real Opcode----------------------------------------------:"+Integer.toHexString(opcode));
+        // System.out.println(Integer.toHexString( opcode >> 12));
+        // System.out.println(Integer.toHexString( opcode >> 8));
+        // System.out.println(Integer.toHexString( opcode >> 4));
+        // System.out.println(Integer.toHexString(opcode & 0xF000));
 
         pc += 2;
         
@@ -154,49 +154,72 @@ public class chip8 {
 
             case 0x8000:
                 switch (opcode & 0x000F) {
-                    //
+                    // 8xy0: LD Vx, Vy (Sets V[x] = V[y])
                     case 0x0000:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) V[(opcode & 0x00F0) >> 4];
                         break;
                     
-                    //
+                    // 8xy1: OR Vx, Vy (Sets V[x] = V[x] | V[y])
                     case 0x0001:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] | V[(opcode & 0x00F0) >> 4]);
                         break;
                     
-                    //
+                    // 8xy2: AND Vx, Vy (Sets V[x] = V[x] & V[y])
                     case 0x0002:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] & V[(opcode & 0x00F0) >> 4]);
                         break;
                     
-                    //
+                    // 8xy3: XOR Vx, Vy (Sets V[x] = V[x] ^ V[y])
                     case 0x0003:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] ^ V[(opcode & 0x00F0) >> 4]);
                         break;
                     
-                    //
+                    // 8xy4: ADD Vx, Vy (Sets V[x] = V[x] + V[y], VF = Carry)
                     case 0x0004:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]);
+                        
+                        if ((V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]) > 255) {
+                            V[0xF] = 1;
+                        }
+                        else {
+                            V[0xF] = 0;
+                        }
                         break;
                     
-                    //
+                    // 8xy5: SUB Vx, Vy (Sets V[x] = V[x] - V[y], VF = NOT borrow)
                     case 0x0005:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] - V[(opcode & 0x00F0) >> 4]);
+                        
+                        if (V[(opcode & 0x0F00) >> 8] >= V[(opcode & 0x00F0) >> 4]) {
+                            V[0xF] = 1;
+                        }
+                        else {
+                            V[0xF] = 0;
+                        }
                         break;
                     
-                    //
+                    // 8xy6: SHR Vx, {, Vy} (Set V[x] = V[x] SHR 1)
                     case 0x0006:
-                        // ===============================================================MY BAD========================
+                        V[0xF] = (short) (V[(opcode & 0x0F00) >> 8] & 0x01);              
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] >> 1);                  
                         break;
                     
-                    //
+                    // 8xy7: SUBN Vx, Vy (Sets V[x] = V[y] - V[x], VF = NOT borrow)
                     case 0x0007:
-                        // ===============================================================MY BAD========================
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8]);
+                        
+                        if (V[(opcode & 0x00F0) >> 4] >= V[(opcode & 0x0F00) >> 8]) {
+                            V[0xF] = 1;
+                        }
+                        else {
+                            V[0xF] = 0;
+                        }
                         break;
                     
-                    //
+                    // 8xyE: SHL Vx, {, Vy} (Set V[x] = V[x] SHL 1)
                     case 0x000E:
-                        // ===============================================================MY BAD========================
+                        V[0xF] = (short) ((V[(opcode & 0x0F00) >> 8] >> 7) & 0x01);       
+                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] << 1);                  
                         break;
                 }
                 break;
@@ -204,6 +227,8 @@ public class chip8 {
             // 9xy0: SNE Vx, Vy (Skip next instruction if V[x] != V[y])
             case 0x9000:
                 if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) {
+                    System.out.println(V[(opcode & 0x0F00) >> 8]);
+                    System.out.println(V[(opcode & 0x00F0) >> 4]);
                     pc += 2;
                 }
                 break;
@@ -278,7 +303,7 @@ public class chip8 {
                     
                     // Fx0A: LD Vx, K (Wait for key, store value of key in V[x])
                     case 0x000A:
-                        // ===============================================================MY BAD========================
+                        // ===============================================================GET THIS DONE AT SOME POINT LOL========================
                         break;
 
                     // Fx15: LD DT, Vx (Set delay timer = V[x])
@@ -303,22 +328,30 @@ public class chip8 {
                     
                     // Fx33: LD B, Vx (Store BCD dep of V[x] in locations I, I+1, I+2)
                     case 0x0033:
-                        // ===============================================================MY BAD========================
+                        int vx = (short) ((opcode & 0x0F00) >> 8);
+                        memory[I] = (byte) (vx / 100);
+                        memory[I+1] = (byte) (Math.abs((vx & 100) / 10));
+                        memory[I+2] = (byte) (Math.abs(vx % 10)); // ===============================================================REWORK THIS, I DONT LIKE IT========================
                         break;
 
                     // Fx55: LD [I], Vx (Store regs V[0]-V[x] in memory starting at location I)
                     case 0x0055:
-                        // ===============================================================MY BAD========================
+                        for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+                            memory[I + i] = (byte) (V[i] & 0x00FF);
+                        }
                         break;
 
                     // Fx65: LD Vx, [I] (Read regs V[0]-V[x] from memory starting at location I)
                     case 0x0065:
-                        // ===============================================================MY BAD========================
+                        for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+                            V[i] = (short) (memory[I + i] & 0x00FF); // =======================================SWITCH TO 0X00FF IF BUSTED===============
+                        }    
                         break;
                 }
 
             default:
                 System.out.println("Instruction missing or invalid.");
+                System.out.println(Integer.toHexString(opcode));
                 break;
         }
     }
