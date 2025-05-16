@@ -6,7 +6,7 @@ public class backup {
     // copy-paste this back in if needed, under chip8.java.cycle
 
 
-    byte hb1 = (byte) ((memory[pc] & 0xF0) >> 4);                               // pulls half-byte 1 from memory[pc]
+        byte hb1 = (byte) ((memory[pc] & 0xF0) >> 4);                               // pulls half-byte 1 from memory[pc]
         byte x = (byte) ((memory[pc] & 0x0F));                                      // pulls half-byte 2 from memory[pc]
         byte y = (byte) ((memory[pc+1] & 0xF0) >> 4);                               // pulls half-byte 3 from memory[pc+1]
         byte n = (byte) ((memory[pc+1] & 0x0F));                                    // pulls half-byte 4 from memory[pc+1]

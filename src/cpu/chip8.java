@@ -78,283 +78,359 @@ public class chip8 {
 
     // Fetches, Decodes, and Executes current opcode at PC.
     public void cycle() {
-        int opcode = (((memory[pc]) & 0x00FF) << 8) | ((memory[pc+1]) & 0x00FF);
-        // System.out.println("Opcode---------------------------------------------------:"+Integer.toHexString((((memory[pc]) & 0x00FF) << 8) | ((memory[pc+1]) & 0x00FF)));
-        // System.out.println("Real Opcode----------------------------------------------:"+Integer.toHexString(opcode));
-        // System.out.println(Integer.toHexString( opcode >> 12));
-        // System.out.println(Integer.toHexString( opcode >> 8));
-        // System.out.println(Integer.toHexString( opcode >> 4));
-        // System.out.println(Integer.toHexString(opcode & 0xF000));
-
-        pc += 2;
+        byte hb1 = (byte) ((memory[pc] & 0xF0) >> 4);                               // pulls half-byte 1 from memory[pc]
+        byte x = (byte) ((memory[pc] & 0x0F));                                      // pulls half-byte 2 from memory[pc]
+        byte y = (byte) ((memory[pc+1] & 0xF0) >> 4);                               // pulls half-byte 3 from memory[pc+1]
+        byte n = (byte) ((memory[pc+1] & 0x0F));                                    // pulls half-byte 4 from memory[pc+1]
+        byte kk  = (byte) ((memory[pc+1]) & 0xFF);                                  // pulls second byte for kk value
+        short nnn = (short) (((memory[pc] & 0x0F) << 8) |((memory[pc+1] & 0xFF) )); // pulls half-bytes 2-4 for nnn value        pc+=2;
         
-        switch (opcode & 0xF000) {
-            case 0x0000:
-                switch (opcode & 0x0FFF) {
-                    // 00E0: CLS (Clear display)
-                    case 0x00E0:
+        pc+=2;                                                                      // increment pc
+
+        //DEBUG LINE
+        //System.out.println("OPCODE: " + hb1  + " | " + x + " | " + y + " | " + n);
+
+        // NOTE: IN THE FUTURE, MAKE OPTION TO TOGGLE BETWEEN DIFFERENT CHIP8 SHIFT (8XY6/8XYE)
+        // NOTE: FOR 8XY6 AND 8XYE, THE IMPLEMENTATIONS VX = VX SHR 1 AND VX = VX SHL 1 ARE USED
+        
+        switch(hb1) {
+            case 0x0:                                    // FIRST HALF-BYTE 0
+                switch (nnn) {
+                    case 0x00E0:                                // clears display (CLS)
                         for (int i = 0; i < display.length; i++) {
                             for (int j = 0; j < display[i].length; j++) {
                                 display[i][j] = 0;
                             }
                         }
+                        System.out.println("0X0000: DISPLAY CLEAR");
                         break;
-
-                    // 00EE: RET (Return from subroutine)
-                    case 0x00EE:
-                        pc = (short) stack[sp];
-                        stack[sp] = 0;
-                        sp--;                                                  // IF BUSTED, MOVE THIS LINE TO FIRST IN THE CASE ==========================================
+                    case 0x00EE:                                // returns from subroutine (RET)
+                        sp--;                                   // decrements sp
+                        pc = (short) stack[sp];                         // places value at stack[sp] in pc
+                        stack[sp] = 0;                          // "pops" stack[sp] (sets to 0)
+                        System.out.println("0X00EE: RETURN FROM SUBROUTINE: PC = " + pc);
+                        break;
+                    default:
                         break;
                 }
                 break;
-
-            // 1nnn: JP addr (Jump to location nnn)
-            case 0x1000:
-                pc = (short) (opcode & 0x0FFF);
+            case 0x1:                                    //  FIRST HALF-BYTE 1
+                pc = (short) nnn;                                       // jump to location nnn (JP addr)
+                System.out.println("0X1NNN: JUMP TO NNN: PC = " + pc);//---------------------------------------------------------------------- THIS IS OFF FOR NOW TO I CAN SEE
+                break;
+            case 0x2:                                    // FIRST HALF-BYTE 2
+                stack[sp] = (short) pc;                                 // pushes pc to stack   (CALL addr)
+                sp++;                                           // increments sp
+                pc = (short) nnn;                                       // pc jumps to nnn
+                System.out.println("0X2000: CALL SUBROUTINE: PC = " + pc);
+                break;
+            case 0x3:                            // FIRST HALF-BYTE 3/4  (SE Vx, byte || SNE Vx, byte)                
+                if (V[x] == kk) {               // skips next instruction if 0x3000 && Vx = kk
+                    pc = (short) (pc + 2);  
+                }
+                System.out.println("0X3000: SKIP IF VX = KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
 
-            // 2nnn: CALL addr (Call subroutine at nnn)
-            case 0x2000:
-                sp++;
-                stack[sp] = (short) pc;
-                pc = (short) (opcode & 0x0FFF);
+            case 0x4:
+                if (V[x] != kk) {
+                    pc = (short) (pc + 2);
+                }
+                System.out.println("0x4000: SKIP IF VX != KK: V" + x + " = " + V[x] + " KK = " + kk);
                 break;
 
-            // 3xkk: SE Vx, byte (Skip next instruction if V[x] = kk)
-            case 0x3000:
-                if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
-                    pc += 2;
+            case 0x5:                                    // FIRST HALF-BYTE 5 (SE Vx, Vy)
+                if (V[x] == V[y]) {                             // skips next instruction if Vx = Vy
+                    pc = (short) ((pc + 2) & 0x00FF);
+                }    
+                System.out.println("0x5000: SKIP IF VX = VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                break; 
+            case 0x6:                                    // FIRST HALF-BYTE 6 (LD Vx, byte)
+                //V[x] = (short) (kk & 0x00FF);                               // sets Vx = kk
+                V[x] = (short) (kk & 0xFFFF);
+                System.out.println("0x6000: SETS VX = KK: V" + x + " = " + V[x] + " KK = " + kk);
+                break;
+            case 0x7:                                    // FIRST HALF-BYTE 7 (ADD Vx, byte)
+                //V[x] += (short) (kk & 0x00FF);                              // sets Vx += kk
+                V[x] = (short) ((V[x] + kk) & 0x00FF);
+                System.out.println("0x7000: SETS VX += KK: V" + x + " = " + V[x] + " KK = " + kk);
+                break;
+            case (short) 0x8:                            // FIRST HALF-BYTE 8
+                switch (n) {
+                    case 0x0000:                                // set Vx = Vy (LD Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        
+                        V[x] = (short) (V[y] & 0x00FF);
+                        
+                        System.out.println("0x8xy0: SETS VX = VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0001:                                // set Vx = Vx | Vy (OR Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        
+                        V[x] = (short) ((V[x] | V[y]) & 0x00FF);
+                        
+                        System.out.println("0x8xy1: SETS VX = VX|VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0002:                                // set Vx = Vx & Vy (AND Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+
+                        V[x] = (short) ((V[x] & V[y]) & 0x00FF);
+                        
+                        System.out.println("0x8xy2: SETS VX = VX&VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0003:                                // set Vx = Vx ^ Vy (XOR Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        
+                        V[x] = (short) ((V[x] ^ V[y]) & 0x00FF);
+                        
+                        System.out.println("0x8xy3: SETS VX = VX^VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0004:                                // set Vx = Vx + Vy (ADD Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+
+                        V[x] = (short) ((V[x] + V[y]) & 0x00FF);
+                        
+                        if (((V[x] + V[y]) & 0x00FF) > 255) {                    // if result > 255, set Vf to 1 (carry)
+                            V[0xF] = 1;
+                        }
+                        else {
+                            V[0xF] = 0;
+                        }                          // if result < 255, reset Vf to 0
+
+                        System.out.println("0x8xx4: SETS VX = VX+VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0005:                                // set Vx = Vx - Vy (SUB Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+
+                        V[0xF] = 0;
+
+                        if (V[x] > V[y]) {                          // NOT borrow, so Vf = 1
+                            V[0xF] = 1; 
+                        }
+                        //else {                                      // // borrow, so Vf = 0
+                            //V[0xF] = 0;
+                        //}
+                        
+                        V[x] = (short) ((V[x] - V[y]) & 0x00FF);
+
+                        System.out.println("0x8xy5: SETS VX = VX-VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0006:                                // set Vx = Vx SHR 1 (SHR Vx {, Vy})
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x]);
+
+                        V[0xF] = (short) (V[x] & 0x01);              // Vf is set to lsb of Vx
+                        V[x] = (short) (V[x] >> 1);                  // Vx is shifted right by 1
+                        
+                        System.out.println("0x8xy6: SETS VX >>= 1: V" + x + " = " + V[x] + "Vf = " + V[0xF]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x0007:                                // set Vx = Vy - Vx (SUBN Vx, Vy)
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);
+                        
+                        V[0xF] = 0;
+
+                        if (V[y] > V[x]) {
+                            V[0xF] = 1;   
+                        }
+                        else {
+                            V[0xF] = 0;
+                        }
+
+                        V[x] = (short) ((V[y] - V[x]) & 0x00FF);
+                        
+                        System.out.println("0x8xy7: SETS VX = VY-VX: V" + x + " = " + V[x] + " V" + y + " = " + V[y] + "Vf = " + V[0xF]);
+                        System.out.println("----------------------------");
+                        break;
+                    case 0x000E:                                // set Vx = Vx SHL 1 (SHL Vx {, Vy})
+                        System.out.println("----------------------------");
+                        System.out.println("BEFORE: V" + x + " = " + V[x]);
+
+                        V[0xF] = (short) ((V[x] >> 7) & 0x01);       // Vf is set to msb of Vx (shift msb to lsb)
+                        V[x] = (short) (V[x] << 1);                  // Vx is shifted left by 1
+                        
+                        System.out.println("0x8xyE: SETS VX <<= 1: V" + x + " = " + V[x] + "Vf = " + V[0xF]);
+                        System.out.println("----------------------------");
+                        break;
+                    default:
+                        break;
                 }
                 break;
-
-            // 4xkk: SNE Vx, byte (Skip next instruction if V[x] != kk)
-            case 0x4000:
-                if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
-                    pc += 2;
+            case (short) 0x9:                            // FIRST HALF-BYTE 9 (SNE Vx, Vy)
+                if (V[x] != V[y]) {                             // skips next instruction if Vx != Vy
+                    pc += (short) 2;
                 }
+                System.out.println("0x9000: SKIP IF VX != VY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);  
                 break;
-
-            // 5xy0: SE Vx, Vy (Skip next instruction if V[x] = V[y])
-            case 0x5000:
-                if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) {
-                    pc += 2;
-                }
+            case (short) 0xA:                            // FIRST HALF-BYTE A (LD I, addr)
+                I = (short) nnn;                                        // set I = nnn
+                System.out.println("0xA000: SETS I=nnn: I=0x" + Integer.toHexString(I) + " nnn=" + Integer.toHexString(nnn));
                 break;
+            case (short) 0xB:                            // FIRST HALF-BYTE B (JP V0, addr)
+                pc = (short) (nnn + V[0x0]);                    // set pc = (nnn + V0)
+                System.out.println("0xB000: SETS pc=(nnn+V0): pc=" + pc + " nnn=" + nnn + " V0=" + V[0x0]);
+                break;                                   
+            case (short) 0xC:                            // FIRST HALF-BYTE C (RND Vx, byte)
+                Random rand = new Random();                     // creates random object
+                V[x] = (byte) (rand.nextInt(0, 256) & kk);      // sets Vx = random(0, 256) & kk
+                System.out.println("0xC000: SETS V[x] = random(0,256): V" + x + " = " + V[x]);
+                break;                                   
+            case (short) 0xD:                            // FIRST HALF-BYTE D (DRW Vx, Vy, nibble)   
+                /* HOW DOES DISPLAY WORK?
+                 * the value at address I holds the bytes that form the sprite
+                 * lets say I = 0x257, and the bytes from 0x257 onwards are 0xFF, 0xE0, 0xCC
+                 * n will be given in the instruction. this corresponds to a height of n pixels.
+                 * coincedentally, there are three bytes of interest at 0x257, 0x258, 0x259
+                 * the ycoord and xcoord are found first, by doing V[y] % 32 for ycoord, and V[x] % 64 for xcoord.
+                 * we set up a loop for the pixel rows, and save the current byte (0xff) into a variable
+                 * the xcoord is reset. we then do current & 0x80 >> 7, to get the first bit in the byte, and shift it to the front
+                 * for 0xff, this gives us [1]1111111 -> [1]0000000 -> 0000000[1]
+                 * if the pixel at (xcoord,ycoord) is already on, set vf. then xor the pixel onto the screen, using the coordinates
+                 * xcoord is incremented every time, to draw the next pixel. current is shifted left 1, to get rid of the byte we just drew
+                 * ycoord is incremented after the entire row has been drawn, in order to process the next row */
             
-            // 6xkk: LD V[x], byte (Sets V[x] = kk)
-            case 0x6000:
-                V[(opcode & 0x0F00) >> 8] = (short) (opcode & 0x00FF);
-                break;
+                short xcoord = (short) ((V[x] % 64) & 0x00FF);               // gets x-coord
+                short ycoord = (short) ((V[y] % 32) & 0x00FF);               // gets y-coord
+                short height = (short) (n & 0x00FF);                         // gets sprite height
+                V[0xF] = 0;                                     // resets Vf
+                short current;                                   // going to hold current byte (for drawing)
 
-            // 7xkk: ADD V[x], byte (Sets V[x] += kk)
-            case 0x7000:
-                V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] + (opcode & 0x00FF));
-                break;
-
-            case 0x8000:
-                switch (opcode & 0x000F) {
-                    // 8xy0: LD Vx, Vy (Sets V[x] = V[y])
-                    case 0x0000:
-                        V[(opcode & 0x0F00) >> 8] = (short) V[(opcode & 0x00F0) >> 4];
-                        break;
-                    
-                    // 8xy1: OR Vx, Vy (Sets V[x] = V[x] | V[y])
-                    case 0x0001:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] | V[(opcode & 0x00F0) >> 4]);
-                        break;
-                    
-                    // 8xy2: AND Vx, Vy (Sets V[x] = V[x] & V[y])
-                    case 0x0002:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] & V[(opcode & 0x00F0) >> 4]);
-                        break;
-                    
-                    // 8xy3: XOR Vx, Vy (Sets V[x] = V[x] ^ V[y])
-                    case 0x0003:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] ^ V[(opcode & 0x00F0) >> 4]);
-                        break;
-                    
-                    // 8xy4: ADD Vx, Vy (Sets V[x] = V[x] + V[y], VF = Carry)
-                    case 0x0004:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]);
-                        
-                        if ((V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]) > 255) {
-                            V[0xF] = 1;
-                        }
-                        else {
-                            V[0xF] = 0;
-                        }
-                        break;
-                    
-                    // 8xy5: SUB Vx, Vy (Sets V[x] = V[x] - V[y], VF = NOT borrow)
-                    case 0x0005:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] - V[(opcode & 0x00F0) >> 4]);
-                        
-                        if (V[(opcode & 0x0F00) >> 8] >= V[(opcode & 0x00F0) >> 4]) {
-                            V[0xF] = 1;
-                        }
-                        else {
-                            V[0xF] = 0;
-                        }
-                        break;
-                    
-                    // 8xy6: SHR Vx, {, Vy} (Set V[x] = V[x] SHR 1)
-                    case 0x0006:
-                        V[0xF] = (short) (V[(opcode & 0x0F00) >> 8] & 0x01);              
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] >> 1);                  
-                        break;
-                    
-                    // 8xy7: SUBN Vx, Vy (Sets V[x] = V[y] - V[x], VF = NOT borrow)
-                    case 0x0007:
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8]);
-                        
-                        if (V[(opcode & 0x00F0) >> 4] >= V[(opcode & 0x0F00) >> 8]) {
-                            V[0xF] = 1;
-                        }
-                        else {
-                            V[0xF] = 0;
-                        }
-                        break;
-                    
-                    // 8xyE: SHL Vx, {, Vy} (Set V[x] = V[x] SHL 1)
-                    case 0x000E:
-                        V[0xF] = (short) ((V[(opcode & 0x0F00) >> 8] >> 7) & 0x01);       
-                        V[(opcode & 0x0F00) >> 8] = (short) (V[(opcode & 0x0F00) >> 8] << 1);                  
-                        break;
-                }
-                break;
-
-            // 9xy0: SNE Vx, Vy (Skip next instruction if V[x] != V[y])
-            case 0x9000:
-                if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) {
-                    System.out.println(V[(opcode & 0x0F00) >> 8]);
-                    System.out.println(V[(opcode & 0x00F0) >> 4]);
-                    pc += 2;
-                }
-                break;
-
-            // Annn: LD I, addr (Sets I = nnn)
-            case 0xA000:
-                I = (short) (opcode & 0xFFF);
-                break;
-
-            // Bnnn: JP V0, addr (Jump to location nnn + V[0])
-            case 0xB000:
-                pc = (short) V[0x0] + (opcode & 0x0FFF);
-                break;
-
-            // Cxkk: RND Vx, byte (Sets V[x] = random byte & kk)
-            case 0xC000:
-                Random rand = new Random();                
-                V[(opcode & 0x0F00) >> 8] = (short) (rand.nextInt(0, 256) & (opcode & 0x00FF));
-                break;        
-
-            // Dxyn: DRW Vx, Vy, nibble (Draws sprites on screen)
-            case 0xD000:
-                //int x = (short) ((V[(opcode & 0x0F00) >> 8] % 64) & 0x00FF);  // x-coord  (CATCHALL)=====================================================================
-                int x;                                                          // x-coord
-                int y = (short) ((V[(opcode & 0x00F0) >> 4] % 32) & 0x00FF);    // y-coord
-                int h = (short) (opcode & 0x000F);                              // sprite height
-                V[0xF] = 0;                                                     // resets V[F]
-                
-                short current;                                                  // current byte
-                for (int rows = 0; rows < h; rows++) {
+                for (int rows = 0; rows < height; rows++) {     // loops for n rows
                     current = (short) ((memory[I + rows]) & 0xFF);              // sets current as the current byte to draw
-                    x = (short) ((V[(opcode & 0x0F00) >> 8] % 64) & 0x00FF);    // sets x = V[x]
+                    xcoord = (short) ((V[x] % 64) & 0xFF);                    // sets xcoord using modulo
 
-                    for (int bit = 0; bit < 8; bit++) {                         // loops for 1 byte
-                        if (((current & 0x80) >> 7) != 0) {                     // pulls first byte
-                            if (display[y % 32][x % 64] == 1) {                 // if the corresponding pixel on, set V[F]
+                    for (int bit = 0; bit < 8; bit++) {             // loops for 8 bits = 1 byte
+                        if (((current & 0x80) >> 7) != 0) {             // pulls first byte
+                            if (display[ycoord % 32][xcoord % 64] == 1) {         // if the corresponding screen pixel is 1, set Vf
                                 V[0xF] = 1;
                             }
-                            display[y % 32][x % 64] ^= 1;                       // XORs byte onto the corresponding pixel
+                            display[ycoord % 32][xcoord % 64] ^= 1;           // XORs the byte onto the corresponding pixel
                         }
-                        x++;                                                    // increments x to set up for next bit
-                        current <<= 1;                                          // retrieves next bit in draw byte
+                        //System.out.println("xcoord: " + xcoord);
+                        xcoord++;                                   // increments xcoord to set up for next bit
+                        current <<= 1;                              // shifts current 1 place left, to move next bit to draw
                     }
-                    y++;                                                        // increments y for next row
+                    //System.out.println("ycoord: " + ycoord);
+                    ycoord++;                                       // increments ycoord to process next layer of sprite
+                }
+                System.out.println("0xD000: DISPLAY: V" + x + " = " + V[x] + " V" + y + " = " + V[y]);            // holy shit boss, i think we implemented it (2025-05-03 1:35 am)
+                break;
+            case (short) 0xE:                           // FIRST HALF-BYTE E
+                switch(kk) {
+                    case (byte) 0x009E:                         // skip instruction if key with value of Vx is pressed (SKP Vx)
+                        if (keys[V[x]] == true) {
+                            pc += (short) 2;
+                        }
+                        System.out.println("0xEX9E: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);
+                        break;
+                    case (byte) 0x00A1:                         // skip instruction if key with value of Vx is not pressed (SKNP Vx)
+                        if (keys[V[x]] == false) {
+                            pc += (short) 2;
+                        }
+                        System.out.println("0xEXA1: V" + x + " = " + V[x] + " Key V" + x + " pressed: " + keys[V[x]]);    
+                        break;
+                    default:
+                        break;
                 }
                 break;
-
-            case 0xE000:
-                switch (opcode & 0x00FF) {
-                    // Ex9E: SKP Vx (Skip next instruction if key value V[x] pressed)
-                    case 0x009E:
-                        if (keys[V[(opcode & 0x0F00) >> 8]] == true) {
-                            pc += 2;
-                        }
+            case (short) 0xF:                            // FIRST HALF-BYTE F
+                switch(kk) {
+                    case 0x0007:                                // set vx = delay timer value (LD Vx, DT)
+                        V[x] = (short) deltimer;
+                        System.out.println("0xFX07: SETS VX = DELTIMER, V" + x + " = " + V[x] + ", DELTIMER: " + deltimer);
                         break;
-                    
-                    // ExA1: SKNP Vx (Skip next instruction if key value V[x] not pressed)
-                    case 0x00A1:
-                        if (keys[V[(opcode & 0x0F00) >> 8]] == false) {
-                            pc += 2;
+                    case 0x000A:                                //-----------later---------------------------------------
+                        System.out.println("0xFX0A: NOT IMPLEMENTED\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+                        break;
+                    case 0x0015:                                // sets delay timer = vx (LD DT, Vx)
+                        deltimer = (byte) (V[x] & 0x00FF);
+                        System.out.println("0xFX15: SETS DELTIMER = V[X], DELTIMER: " + deltimer + ", V" + x + " = " + V[x]);
+                        break;
+                    case 0x0018:                                // sets sound timer = vx (LD ST, Vx)
+                        sndtimer = (byte) (V[x] & 0x00FF);
+                        System.out.println("0xFX18: SETS SNDTIMER = V[X], SNDTIMER: " + sndtimer + ", V" + x + " = " + V[x]);
+                        break;
+                    case 0x001E:                                // sets I = I + Vx (ADD I, Vx)
+                        I = (short) (I + V[x]);
+                        System.out.println("0xFX1E: SETS I += V[X], I: " + I + ", V" + x + " = " + V[x]);
+                        break;
+                    case 0x0029:                                // sets I = memory location of character in vx (LD F, Vx)
+                        I = (short) (0x50 + (V[x] * 5));                        
+                        System.out.println("0xFX29: I = LOCATION OF CHAR IN V[x], I: " + I + ", V" + x + " = " + V[x]);
+                        break;
+                    case 0x0033:                                // break vx into three digits, and store at I, I+1, I+2 (LD B, Vx)
+                        int value = V[x];
+
+                        memory[I] = (byte) (value / 100);
+                        memory[I+1] = (byte) (Math.abs((value % 100) / 10));
+                        memory[I+2] = (byte) (Math.abs(value % 10));
+
+                        System.out.println("0xFX33: V" + x + " = " + V[x] + " I = " + memory[I] + " I+1 = " + memory[I+1] + " I+2 = " + memory[I+2]);
+                        break;
+                    case 0x0055:                                // store registers v0-vx (LD [I], Vx)
+                        for (int index = 0; index <= x; index++) {
+                            memory[I + index] = (byte) V[index];
                         }
+                        System.out.println("0xFX65: REGISTERS V0 TO V" + x + " STORED AT I=" + I);   
+                        break;
+                    case 0x0065:                                // load registers v0-vx (LD Vx, [I])
+                        for (int index = 0; index <= x; index++) {
+                            V[index] = (short) ((memory[I + index]) & 0x00FF);
+                        }
+                        System.out.println("0xFX65: REGISTERS V0 TO V" + x + " LOADED FROM I=" + I);
+                        break;
+                    default:
+                        System.out.println("--------------BAD OPCODE----------------");
                         break;
                 }
-                break;
-
-            case 0xF000:
-                switch (opcode & 0x00FF) {
-                    // Fx07: LD Vx, DT (Set V[x] = delay timer)
-                    case 0x0007:
-                        V[(opcode & 0x0F00) >> 8] = (short) deltimer;
-                        break;
-                    
-                    // Fx0A: LD Vx, K (Wait for key, store value of key in V[x])
-                    case 0x000A:
-                        // ===============================================================GET THIS DONE AT SOME POINT LOL========================
-                        break;
-
-                    // Fx15: LD DT, Vx (Set delay timer = V[x])
-                    case 0x0015:
-                        deltimer = (byte) (V[(opcode & 0x0F00) >> 8]);
-                        break;
-
-                    // Fx18: LD ST, Vx (Set sound timer = V[x])
-                    case 0x0018:
-                        sndtimer = (byte) (V[(opcode & 0x0F00) >> 8]);
-                        break;
-
-                    // Fx1E: ADD I, Vx (Set I += V[x])
-                    case 0x001E:
-                        I = (short) (I + V[(opcode & 0x0F00) >> 8]);
-                        break;
-
-                    // Fx29: LD F, Vx (Set I = location of sprite for digit V[x])
-                    case 0x0029:
-                        I = (short) (0x50 + (V[(opcode & 0x0F00) >> 8] * 5));    
-                        break;
-                    
-                    // Fx33: LD B, Vx (Store BCD dep of V[x] in locations I, I+1, I+2)
-                    case 0x0033:
-                        int vx = (short) ((opcode & 0x0F00) >> 8);
-                        memory[I] = (byte) (vx / 100);
-                        memory[I+1] = (byte) (Math.abs((vx & 100) / 10));
-                        memory[I+2] = (byte) (Math.abs(vx % 10)); // ===============================================================REWORK THIS, I DONT LIKE IT========================
-                        break;
-
-                    // Fx55: LD [I], Vx (Store regs V[0]-V[x] in memory starting at location I)
-                    case 0x0055:
-                        for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
-                            memory[I + i] = (byte) (V[i] & 0x00FF);
-                        }
-                        break;
-
-                    // Fx65: LD Vx, [I] (Read regs V[0]-V[x] from memory starting at location I)
-                    case 0x0065:
-                        for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
-                            V[i] = (short) (memory[I + i] & 0x00FF); // =======================================SWITCH TO 0X00FF IF BUSTED===============
-                        }    
-                        break;
-                }
-
-            default:
-                System.out.println("Instruction missing or invalid.");
-                System.out.println(Integer.toHexString(opcode));
-                break;
-        }
+            }
+    
     }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
     // Updates display/sound timers at a rate of 60hz (in ScreenPanel).
     public void cycleTimers() {
